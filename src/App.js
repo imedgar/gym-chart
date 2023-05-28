@@ -12,21 +12,19 @@ function groupBy(xs, key) {
 
 function parseFileToObjects(file) {
   return file.split('\n')
-  .filter(entry => entry.length > 0)
-  .map(entry => JSON.parse(entry));
+    .filter(entry => entry.length > 0)
+    .map(entry => JSON.parse(entry));
 }
 
 function buildChartData(chart) {
   const chartData = [];
-  const chartLabels = [];
+  const chartLabels = new Set();
   
   for (const date in chart) {
     chartData.push({
-      label: 'members in',
+      label: date,
       data: chart[date].map(item => {
-        if (chartLabels.indexOf(item.time) === -1) {
-          chartLabels.push(item.time);
-        }
+        chartLabels.add(item.time);
         return {
           x: item.time,
           y: parseInt(item.in),
@@ -36,8 +34,8 @@ function buildChartData(chart) {
   }
 
   return {
-    data: chartData,
-    labels: chartLabels.sort(),
+    datasets: chartData,
+    labels: [...chartLabels].sort(),
   }
 }
 
@@ -46,12 +44,12 @@ function App() {
   const [capacity, setCapacity] = useState([]);
   
   const getCapacity = async () => {
-    setLoading(true);
-
-    const fileData = await fetch('data.csv').then(response => response.text());
-    const chart = groupBy(parseFileToObjects(fileData), 'date');
+    setLoading(true);    
+    const fileData = await fetch('data.csv')
+      .then(response => response.text())
+      .then(text => parseFileToObjects(text));
+    const chart = groupBy(fileData, 'date');
     setCapacity(buildChartData(chart));
-
     setLoading(false);
   };
   useEffect(() => {
@@ -65,10 +63,23 @@ function App() {
   return (
     <div className="App">
     <header className="App-header">
-    <Chart type='line' data={{
-      labels: capacity.labels,
-      datasets: capacity.data
-    }} />
+    <Chart 
+    type='line' 
+    data={capacity}
+    options= {{
+      plugins: {
+        title: {
+          display: true,
+          text: 'Gym capacity'
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `IN: ${context.parsed.y}` 
+          }
+        }
+      }
+    }}
+    />
     </header>
     </div>
     );
