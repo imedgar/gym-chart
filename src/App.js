@@ -25,7 +25,7 @@ function buildChartData(chart) {
       label: date,
       data: chart[date].map(item => {
         chartLabels.add(item.time);
-        return {
+        return parseInt(item.in) === 0 ? {} : {
           x: item.time,
           y: parseInt(item.in),
         }
